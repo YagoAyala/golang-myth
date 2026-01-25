@@ -1,6 +1,6 @@
 # Go Hiring Challenge
 
-This repository contains a Go application for managing products and their prices, including functionalities for CRUD operations and seeding the database with initial data.
+This repository contains a Go application for managing products, categories, and their prices, including functionalities for CRUD operations and seeding the database with initial data.
 
 ## Project Structure
 
@@ -10,9 +10,39 @@ This repository contains a Go application for managing products and their prices
    - `seed/main.go`: Command to seed the database with initial product data.
 
 2. **app/**: Contains the application logic.
+   - `api/`: Common API response utilities.
+   - `catalog/`: Product catalog handlers and logic.
+   - `categories/`: Category management handlers.
+   - `database/`: Database connection management.
+
 3. **sql/**: Contains a very simple database migration scripts setup.
 4. **models/**: Contains the data models and repositories used in the application.
-5. `.env`: Environment variables file for configuration.
+5. `.env`: Environment variables file for configuration (see `env.example` for reference).
+
+## API Endpoints
+
+### Catalog Endpoints
+
+- **GET /catalog** - List all products with pagination and filtering
+  - Query Parameters:
+    - `offset` (optional): Pagination offset (default: 0)
+    - `limit` (optional): Number of items per page (default: 10, min: 1, max: 100)
+    - `category` (optional): Filter by category code (e.g., "clothing", "shoes", "accessories")
+    - `priceLessThan` (optional): Filter products with price less than specified value
+  - Response: `{ "products": [...], "total": <count> }`
+
+- **GET /catalog/{code}** - Get product details by code
+  - Returns product with all variants (variants inherit product price if not specified)
+  - Response includes category information
+
+### Categories Endpoints
+
+- **GET /categories** - List all categories
+  - Response: `{ "categories": [...] }`
+
+- **POST /categories** - Create a new category
+  - Request Body: `{ "code": "category-code", "name": "Category Name" }`
+  - Response: The created category
 
 ## Setup Code Repository
 
@@ -23,6 +53,7 @@ This repository contains a Go application for managing products and their prices
 
 - Ensure you have Go installed on your machine.
 - Ensure you have Docker installed on your machine.
+- Copy `env.example` to `.env` and adjust settings if needed.
 - Important makefile targets:
   - `make tidy`: will install all dependencies.
   - `make docker-up`: will start the required infrastructure services via docker containers.
@@ -30,5 +61,22 @@ This repository contains a Go application for managing products and their prices
   - `make test`: Will run the tests.
   - `make run`: Will start the application.
   - `make docker-down`: Will stop the docker containers.
+
+## Database Schema
+
+The application uses the following main entities:
+
+- **Categories**: Product categories (Clothing, Shoes, Accessories)
+- **Products**: Products with code, price, and category reference
+- **Product Variants**: Variants of products with optional specific pricing
+
+## Testing
+
+The application includes comprehensive unit tests for:
+- API response utilities
+- Catalog handlers (listing, filtering, pagination, product details)
+- Category handlers (listing, creation)
+
+Run tests with: `make test`
 
 Follow up for the assignemnt here: [ASSIGNMENT.md](ASSIGNMENT.md)
