@@ -82,7 +82,9 @@ func main() {
 
 	<-ctx.Done()
 	logger.Info("shutting down server")
-	srv.Shutdown(ctx)
+	if err := srv.Shutdown(context.Background()); err != nil {
+		logger.Error("server shutdown failed", slog.String("error", err.Error()))
+	}
 	stop()
 	logger.Info("server shutdown complete")
 }

@@ -152,7 +152,8 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 		mockRepo := &mockProductsRepository{
 			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 				assert.NotNil(t, priceLessThan)
-				assert.Equal(t, "15.00", priceLessThan.String())
+				expected := decimal.NewFromFloat(15.00)
+				assert.True(t, priceLessThan.Equal(expected))
 				return []models.Product{
 					{
 						Code:  "PROD001",
