@@ -43,7 +43,11 @@ func main() {
 		os.Getenv("POSTGRES_DB"),
 		os.Getenv("POSTGRES_PORT"),
 	)
-	defer close()
+	defer func() {
+		if err := close(); err != nil {
+			logger.Error("failed to close database", slog.String("error", err.Error()))
+		}
+	}()
 
 	// Initialize repositories
 	prodRepo := models.NewProductsRepository(db)

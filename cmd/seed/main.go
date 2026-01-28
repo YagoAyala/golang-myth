@@ -25,7 +25,11 @@ func main() {
 		os.Getenv("POSTGRES_DB"),
 		os.Getenv("POSTGRES_PORT"),
 	)
-	defer close()
+	defer func() {
+		if err := close(); err != nil {
+			log.Printf("failed to close database: %v", err)
+		}
+	}()
 
 	dir := os.Getenv("POSTGRES_SQL_DIR")
 	files, err := os.ReadDir(dir)
