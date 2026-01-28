@@ -120,7 +120,7 @@ func TestCategoriesHandler_HandlePost(t *testing.T) {
 
 		handler := NewCategoriesHandler(mockRepo)
 
-		reqBody := CreateCategoryRequest{
+		reqBody := createCategoryRequest{
 			Code: "electronics",
 			Name: "Electronics",
 		}
@@ -156,7 +156,7 @@ func TestCategoriesHandler_HandlePost(t *testing.T) {
 		mockRepo := &mockCategoriesRepository{}
 		handler := NewCategoriesHandler(mockRepo)
 
-		reqBody := CreateCategoryRequest{
+		reqBody := createCategoryRequest{
 			Code: "",
 			Name: "Electronics",
 		}
@@ -176,7 +176,7 @@ func TestCategoriesHandler_HandlePost(t *testing.T) {
 		mockRepo := &mockCategoriesRepository{}
 		handler := NewCategoriesHandler(mockRepo)
 
-		reqBody := CreateCategoryRequest{
+		reqBody := createCategoryRequest{
 			Code: "electronics",
 			Name: "",
 		}
@@ -201,7 +201,7 @@ func TestCategoriesHandler_HandlePost(t *testing.T) {
 
 		handler := NewCategoriesHandler(mockRepo)
 
-		reqBody := CreateCategoryRequest{
+		reqBody := createCategoryRequest{
 			Code: "clothing",
 			Name: "Clothing",
 		}

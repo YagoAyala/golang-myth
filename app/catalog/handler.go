@@ -15,25 +15,25 @@ type ProductsRepository interface {
 	GetProductByCode(ctx context.Context, code string) (*models.Product, error)
 }
 
-type Response struct {
-	Products []Product `json:"products"`
+type response struct {
+	Products []product `json:"products"`
 	Total    int64     `json:"total"`
 }
 
-type Product struct {
+type product struct {
 	Code     string  `json:"code"`
 	Price    float64 `json:"price"`
 	Category string  `json:"category"`
 }
 
-type ProductDetailResponse struct {
+type productDetailResponse struct {
 	Code     string           `json:"code"`
 	Price    float64          `json:"price"`
 	Category string           `json:"category"`
-	Variants []ProductVariant `json:"variants"`
+	Variants []productVariant `json:"variants"`
 }
 
-type ProductVariant struct {
+type productVariant struct {
 	Name  string  `json:"name"`
 	SKU   string  `json:"sku"`
 	Price float64 `json:"price"`
@@ -54,29 +54,42 @@ func (h *CatalogHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	limit := 10
 
 	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
-		if val, err := strconv.Atoi(offsetStr); err == nil && val >= 0 {
-			offset = val
+		val, err := strconv.Atoi(offsetStr)
+		if err != nil {
+			api.ErrorResponse(w, http.StatusBadRequest, "Invalid offset parameter")
+			return
 		}
+		if val < 0 {
+			api.ErrorResponse(w, http.StatusBadRequest, "Offset must be non-negative")
+			return
+		}
+		offset = val
 	}
 
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if val, err := strconv.Atoi(limitStr); err == nil {
-			if val < 1 {
-				limit = 1
-			} else if val > 100 {
-				limit = 100
-			} else {
-				limit = val
-			}
+		val, err := strconv.Atoi(limitStr)
+		if err != nil {
+			api.ErrorResponse(w, http.StatusBadRequest, "Invalid limit parameter")
+			return
+		}
+		if val < 1 {
+			limit = 1
+		} else if val > 100 {
+			limit = 100
+		} else {
+			limit = val
 		}
 	}
 
 	categoryCode := r.URL.Query().Get("category")
 	var priceLessThan *decimal.Decimal
 	if priceStr := r.URL.Query().Get("priceLessThan"); priceStr != "" {
-		if price, err := decimal.NewFromString(priceStr); err == nil {
-			priceLessThan = &price
+		price, err := decimal.NewFromString(priceStr)
+		if err != nil {
+			api.ErrorResponse(w, http.StatusBadRequest, "Invalid priceLessThan parameter")
+			return
 		}
+		priceLessThan = &price
 	}
 
 	res, total, err := h.repo.GetAllProducts(r.Context(), offset, limit, categoryCode, priceLessThan)
@@ -85,21 +98,21 @@ func (h *CatalogHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	products := make([]Product, len(res))
+	products := make([]product, len(res))
 	for i, p := range res {
-		products[i] = Product{
+		products[i] = product{
 			Code:     p.Code,
 			Price:    p.Price.InexactFloat64(),
 			Category: p.Category.Name,
 		}
 	}
 
-	response := Response{
+	resp := response{
 		Products: products,
 		Total:    total,
 	}
 
-	api.OKResponse(w, response)
+	api.OKResponse(w, resp)
 }
 
 func (h *CatalogHandler) HandleGetByCode(w http.ResponseWriter, r *http.Request) {
@@ -109,31 +122,44 @@ func (h *CatalogHandler) HandleGetByCode(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	product, err := h.repo.GetProductByCode(r.Context(), code)
+	prod, err := h.repo.GetProductByCode(r.Context(), code)
 	if err != nil {
-		api.ErrorResponse(w, http.StatusNotFound, "Product not found")
+		if isNotFoundError(err) {
+			api.ErrorResponse(w, http.StatusNotFound, "Product not found")
+		} else {
+			api.ErrorResponse(w, http.StatusInternalServerError, "Failed to retrieve product")
+		}
 		return
 	}
 
-	variants := make([]ProductVariant, len(product.Variants))
-	for i, v := range product.Variants {
+	variants := buildVariantsResponse(prod)
+
+	resp := productDetailResponse{
+		Code:     prod.Code,
+		Price:    prod.Price.InexactFloat64(),
+		Category: prod.Category.Name,
+		Variants: variants,
+	}
+
+	api.OKResponse(w, resp)
+}
+
+func buildVariantsResponse(prod *models.Product) []productVariant {
+	variants := make([]productVariant, len(prod.Variants))
+	for i, v := range prod.Variants {
 		price := v.Price
 		if price.IsZero() {
-			price = product.Price
+			price = prod.Price
 		}
-		variants[i] = ProductVariant{
+		variants[i] = productVariant{
 			Name:  v.Name,
 			SKU:   v.SKU,
 			Price: price.InexactFloat64(),
 		}
 	}
+	return variants
+}
 
-	response := ProductDetailResponse{
-		Code:     product.Code,
-		Price:    product.Price.InexactFloat64(),
-		Category: product.Category.Name,
-		Variants: variants,
-	}
-
-	api.OKResponse(w, response)
+func isNotFoundError(err error) bool {
+	return err.Error() == "record not found"
 }

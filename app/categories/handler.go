@@ -14,16 +14,16 @@ type CategoriesRepository interface {
 	CreateCategory(ctx context.Context, category *models.Category) error
 }
 
-type CategoriesResponse struct {
-	Categories []CategoryItem `json:"categories"`
+type categoriesResponse struct {
+	Categories []categoryItem `json:"categories"`
 }
 
-type CategoryItem struct {
+type categoryItem struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
 }
 
-type CreateCategoryRequest struct {
+type createCategoryRequest struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
 }
@@ -45,23 +45,23 @@ func (h *CategoriesHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items := make([]CategoryItem, len(categories))
+	items := make([]categoryItem, len(categories))
 	for i, c := range categories {
-		items[i] = CategoryItem{
+		items[i] = categoryItem{
 			Code: c.Code,
 			Name: c.Name,
 		}
 	}
 
-	response := CategoriesResponse{
+	resp := categoriesResponse{
 		Categories: items,
 	}
 
-	api.OKResponse(w, response)
+	api.OKResponse(w, resp)
 }
 
 func (h *CategoriesHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
-	var req CreateCategoryRequest
+	var req createCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		api.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		return
@@ -82,10 +82,10 @@ func (h *CategoriesHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := CategoryItem{
+	resp := categoryItem{
 		Code: category.Code,
 		Name: category.Name,
 	}
 
-	api.OKResponse(w, response)
+	api.OKResponse(w, resp)
 }

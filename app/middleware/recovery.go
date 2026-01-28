@@ -1,9 +1,12 @@
 package middleware
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/mytheresa/go-hiring-challenge/app/api"
 )
 
 func Recovery(logger *slog.Logger) func(http.Handler) http.Handler {
@@ -11,15 +14,21 @@ func Recovery(logger *slog.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if err := recover(); err != nil {
+					var errMsg string
+					if e, ok := err.(error); ok {
+						errMsg = e.Error()
+					} else {
+						errMsg = fmt.Sprint(err)
+					}
+
 					logger.Error("panic recovered",
-						slog.String("error", err.(error).Error()),
+						slog.String("error", errMsg),
 						slog.String("stack", string(debug.Stack())),
 						slog.String("method", r.Method),
 						slog.String("path", r.URL.Path),
 					)
 
-					w.WriteHeader(http.StatusInternalServerError)
-					_, _ = w.Write([]byte(`{"error":"Internal server error"}`))
+					api.ErrorResponse(w, http.StatusInternalServerError, "Internal server error")
 				}
 			}()
 
