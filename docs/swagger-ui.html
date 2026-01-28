@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Technical Test - Mytheresa</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js"></script>
+    <script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script>
+        const yamlSpec = `openapi: 3.0.3
+info:
+  title: Technical Test - Mytheresa
+  description: |
+    Product catalog and category management API.
+    
+    This API provides endpoints for managing products and categories in an e-commerce system.
+  version: 1.0.0
+  contact:
+    name: Mytheresa
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+tags:
+  - name: catalog
+    description: Product catalog operations
+  - name: categories
+    description: Category management operations
+
+paths:
+  /catalog:
+    get:
+      tags:
+        - catalog
+      summary: List products
+      description: Retrieve a paginated list of products with optional filtering by category and price
+      operationId: listProducts
+      parameters:
+        - name: offset
+          in: query
+          description: Pagination offset (starting position)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
+        - name: category
+          in: query
+          description: Filter by category code
+          required: false
+          schema:
+            type: string
+            enum: [clothing, shoes, accessories]
+            example: clothing
+        - name: priceLessThan
+          in: query
+          description: Filter products with price less than specified value
+          required: false
+          schema:
+            type: number
+            format: double
+            example: 15.00
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogResponse'
+              examples:
+                default:
+                  value:
+                    products:
+                      - code: PROD001
+                        price: 10.99
+                        category: Clothing
+                      - code: PROD002
+                        price: 12.49
+                        category: Shoes
+                    total: 8
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /catalog/{code}:
+    get:
+      tags:
+        - catalog
+      summary: Get product details
+      description: Retrieve detailed information about a specific product including all variants
+      operationId: getProductByCode
+      parameters:
+        - name: code
+          in: path
+          description: Unique product code
+          required: true
+          schema:
+            type: string
+            example: PROD001
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+              examples:
+                default:
+                  value:
+                    code: PROD001
+                    price: 10.99
+                    category: Clothing
+                    variants:
+                      - name: Variant A
+                        sku: SKU001A
+                        price: 11.99
+                      - name: Variant B
+                        sku: SKU001B
+                        price: 10.99
+        '400':
+          description: Bad request - empty product code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emptyCode:
+                  value:
+                    error: Product code is required
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    error: Product not found
+
+  /categories:
+    get:
+      tags:
+        - categories
+      summary: List categories
+      description: Retrieve all available product categories
+      operationId: listCategories
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriesResponse'
+              examples:
+                default:
+                  value:
+                    categories:
+                      - code: clothing
+                        name: Clothing
+                      - code: shoes
+                        name: Shoes
+                      - code: accessories
+                        name: Accessories
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - categories
+      summary: Create category
+      description: Create a new product category
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+            examples:
+              electronics:
+                value:
+                  code: electronics
+                  name: Electronics
+      responses:
+        '200':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+              examples:
+                created:
+                  value:
+                    code: electronics
+                    name: Electronics
+        '400':
+          description: Bad request - invalid or missing fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidJson:
+                  value:
+                    error: Invalid request body
+                missingFields:
+                  value:
+                    error: Code and name are required
+        '500':
+          description: Internal server error (e.g., duplicate code)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicate:
+                  value:
+                    error: duplicate key violation
+
+components:
+  schemas:
+    CatalogResponse:
+      type: object
+      required:
+        - products
+        - total
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        total:
+          type: integer
+          format: int64
+          description: Total number of products matching the filters
+          example: 8
+
+    Product:
+      type: object
+      required:
+        - code
+        - price
+        - category
+      properties:
+        code:
+          type: string
+          description: Unique product identifier
+          example: PROD001
+        price:
+          type: number
+          format: double
+          description: Product price
+          example: 10.99
+        category:
+          type: string
+          description: Category name
+          example: Clothing
+
+    ProductDetail:
+      type: object
+      required:
+        - code
+        - price
+        - category
+        - variants
+      properties:
+        code:
+          type: string
+          description: Unique product identifier
+          example: PROD001
+        price:
+          type: number
+          format: double
+          description: Product base price
+          example: 10.99
+        category:
+          type: string
+          description: Category name
+          example: Clothing
+        variants:
+          type: array
+          description: Product variants (inherits product price if variant price is not set)
+          items:
+            $ref: '#/components/schemas/ProductVariant'
+
+    ProductVariant:
+      type: object
+      required:
+        - name
+        - sku
+        - price
+      properties:
+        name:
+          type: string
+          description: Variant name
+          example: Variant A
+        sku:
+          type: string
+          description: Stock keeping unit (unique identifier)
+          example: SKU001A
+        price:
+          type: number
+          format: double
+          description: Variant price (inherits from product if not specified)
+          example: 11.99
+
+    CategoriesResponse:
+      type: object
+      required:
+        - categories
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+
+    Category:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          description: Unique category identifier (lowercase, hyphen-separated)
+          example: clothing
+        name:
+          type: string
+          description: Human-readable category name
+          example: Clothing
+
+    CreateCategoryRequest:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          description: Unique category code
+          example: electronics
+        name:
+          type: string
+          description: Category display name
+          example: Electronics
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: Product not found
+`;
+
+        window.onload = function() {
+            const spec = jsyaml.load(yamlSpec);
+            window.ui = SwaggerUIBundle({
+                spec: spec,
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout"
+            });
+        };
+    </script>
+</body>
+</html>

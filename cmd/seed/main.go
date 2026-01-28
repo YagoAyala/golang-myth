@@ -13,19 +13,21 @@ import (
 )
 
 func main() {
-	// Load environment variables from .env file
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
 
-	// Initialize database connection
 	db, close := database.New(
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
 		os.Getenv("POSTGRES_DB"),
 		os.Getenv("POSTGRES_PORT"),
 	)
-	defer close()
+	defer func() {
+		if err := close(); err != nil {
+			log.Printf("failed to close database: %v", err)
+		}
+	}()
 
 	dir := os.Getenv("POSTGRES_SQL_DIR")
 	files, err := os.ReadDir(dir)
@@ -33,7 +35,6 @@ func main() {
 		log.Fatalf("reading directory failed: %v", err)
 	}
 
-	// Filter and sort .sql files
 	var sqlFiles []os.DirEntry
 	for _, file := range files {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".sql") {
