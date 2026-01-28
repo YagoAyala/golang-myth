@@ -2,6 +2,7 @@ package categories
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -13,20 +14,20 @@ import (
 )
 
 type mockCategoriesRepository struct {
-	getAllCategoriesFunc func() ([]models.Category, error)
-	createCategoryFunc   func(category *models.Category) error
+	getAllCategoriesFunc func(ctx context.Context) ([]models.Category, error)
+	createCategoryFunc   func(ctx context.Context, category *models.Category) error
 }
 
-func (m *mockCategoriesRepository) GetAllCategories() ([]models.Category, error) {
+func (m *mockCategoriesRepository) GetAllCategories(ctx context.Context) ([]models.Category, error) {
 	if m.getAllCategoriesFunc != nil {
-		return m.getAllCategoriesFunc()
+		return m.getAllCategoriesFunc(ctx)
 	}
 	return nil, nil
 }
 
-func (m *mockCategoriesRepository) CreateCategory(category *models.Category) error {
+func (m *mockCategoriesRepository) CreateCategory(ctx context.Context, category *models.Category) error {
 	if m.createCategoryFunc != nil {
-		return m.createCategoryFunc(category)
+		return m.createCategoryFunc(ctx, category)
 	}
 	return nil
 }
@@ -34,7 +35,7 @@ func (m *mockCategoriesRepository) CreateCategory(category *models.Category) err
 func TestCategoriesHandler_HandleGet(t *testing.T) {
 	t.Run("successful categories retrieval", func(t *testing.T) {
 		mockRepo := &mockCategoriesRepository{
-			getAllCategoriesFunc: func() ([]models.Category, error) {
+			getAllCategoriesFunc: func(ctx context.Context) ([]models.Category, error) {
 				return []models.Category{
 					{
 						ID:   1,
@@ -73,7 +74,7 @@ func TestCategoriesHandler_HandleGet(t *testing.T) {
 
 	t.Run("empty categories list", func(t *testing.T) {
 		mockRepo := &mockCategoriesRepository{
-			getAllCategoriesFunc: func() ([]models.Category, error) {
+			getAllCategoriesFunc: func(ctx context.Context) ([]models.Category, error) {
 				return []models.Category{}, nil
 			},
 		}
@@ -90,7 +91,7 @@ func TestCategoriesHandler_HandleGet(t *testing.T) {
 
 	t.Run("repository error", func(t *testing.T) {
 		mockRepo := &mockCategoriesRepository{
-			getAllCategoriesFunc: func() ([]models.Category, error) {
+			getAllCategoriesFunc: func(ctx context.Context) ([]models.Category, error) {
 				return nil, errors.New("database error")
 			},
 		}
@@ -109,7 +110,7 @@ func TestCategoriesHandler_HandleGet(t *testing.T) {
 func TestCategoriesHandler_HandlePost(t *testing.T) {
 	t.Run("successful category creation", func(t *testing.T) {
 		mockRepo := &mockCategoriesRepository{
-			createCategoryFunc: func(category *models.Category) error {
+			createCategoryFunc: func(ctx context.Context, category *models.Category) error {
 				assert.Equal(t, "electronics", category.Code)
 				assert.Equal(t, "Electronics", category.Name)
 				category.ID = 4
@@ -193,7 +194,7 @@ func TestCategoriesHandler_HandlePost(t *testing.T) {
 
 	t.Run("repository error on create", func(t *testing.T) {
 		mockRepo := &mockCategoriesRepository{
-			createCategoryFunc: func(category *models.Category) error {
+			createCategoryFunc: func(ctx context.Context, category *models.Category) error {
 				return errors.New("duplicate key violation")
 			},
 		}

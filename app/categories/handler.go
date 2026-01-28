@@ -1,6 +1,7 @@
 package categories
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -9,8 +10,8 @@ import (
 )
 
 type CategoriesRepository interface {
-	GetAllCategories() ([]models.Category, error)
-	CreateCategory(category *models.Category) error
+	GetAllCategories(ctx context.Context) ([]models.Category, error)
+	CreateCategory(ctx context.Context, category *models.Category) error
 }
 
 type CategoriesResponse struct {
@@ -38,7 +39,7 @@ func NewCategoriesHandler(r CategoriesRepository) *CategoriesHandler {
 }
 
 func (h *CategoriesHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
-	categories, err := h.repo.GetAllCategories()
+	categories, err := h.repo.GetAllCategories(r.Context())
 	if err != nil {
 		api.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -76,7 +77,7 @@ func (h *CategoriesHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		Name: req.Name,
 	}
 
-	if err := h.repo.CreateCategory(category); err != nil {
+	if err := h.repo.CreateCategory(r.Context(), category); err != nil {
 		api.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}

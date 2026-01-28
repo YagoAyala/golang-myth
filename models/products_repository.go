@@ -1,6 +1,8 @@
 package models
 
 import (
+	"context"
+
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
@@ -15,11 +17,11 @@ func NewProductsRepository(db *gorm.DB) *ProductsRepositoryImpl {
 	}
 }
 
-func (r *ProductsRepositoryImpl) GetAllProducts(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]Product, int64, error) {
+func (r *ProductsRepositoryImpl) GetAllProducts(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]Product, int64, error) {
 	var products []Product
 	var total int64
 
-	query := r.db.Model(&Product{}).Preload("Category").Preload("Variants")
+	query := r.db.WithContext(ctx).Model(&Product{}).Preload("Category").Preload("Variants")
 
 	if categoryCode != "" {
 		query = query.Joins("JOIN categories ON categories.id = products.category_id").
@@ -41,9 +43,9 @@ func (r *ProductsRepositoryImpl) GetAllProducts(offset, limit int, categoryCode 
 	return products, total, nil
 }
 
-func (r *ProductsRepositoryImpl) GetProductByCode(code string) (*Product, error) {
+func (r *ProductsRepositoryImpl) GetProductByCode(ctx context.Context, code string) (*Product, error) {
 	var product Product
-	if err := r.db.Preload("Category").Preload("Variants").Where("code = ?", code).First(&product).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Category").Preload("Variants").Where("code = ?", code).First(&product).Error; err != nil {
 		return nil, err
 	}
 	return &product, nil

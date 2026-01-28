@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -12,20 +13,20 @@ import (
 )
 
 type mockProductsRepository struct {
-	getAllProductsFunc   func(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error)
-	getProductByCodeFunc func(code string) (*models.Product, error)
+	getAllProductsFunc   func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error)
+	getProductByCodeFunc func(ctx context.Context, code string) (*models.Product, error)
 }
 
-func (m *mockProductsRepository) GetAllProducts(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
+func (m *mockProductsRepository) GetAllProducts(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 	if m.getAllProductsFunc != nil {
-		return m.getAllProductsFunc(offset, limit, categoryCode, priceLessThan)
+		return m.getAllProductsFunc(ctx, offset, limit, categoryCode, priceLessThan)
 	}
 	return nil, 0, nil
 }
 
-func (m *mockProductsRepository) GetProductByCode(code string) (*models.Product, error) {
+func (m *mockProductsRepository) GetProductByCode(ctx context.Context, code string) (*models.Product, error) {
 	if m.getProductByCodeFunc != nil {
-		return m.getProductByCodeFunc(code)
+		return m.getProductByCodeFunc(ctx, code)
 	}
 	return nil, nil
 }
@@ -33,7 +34,7 @@ func (m *mockProductsRepository) GetProductByCode(code string) (*models.Product,
 func TestCatalogHandler_HandleGet(t *testing.T) {
 	t.Run("successful catalog retrieval with default pagination", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getAllProductsFunc: func(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
+			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 				assert.Equal(t, 0, offset)
 				assert.Equal(t, 10, limit)
 				assert.Equal(t, "", categoryCode)
@@ -67,7 +68,7 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 
 	t.Run("catalog retrieval with custom pagination", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getAllProductsFunc: func(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
+			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 				assert.Equal(t, 5, offset)
 				assert.Equal(t, 20, limit)
 				return []models.Product{}, 0, nil
@@ -85,7 +86,7 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 
 	t.Run("catalog retrieval with limit validation", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getAllProductsFunc: func(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
+			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 				// Limit should be clamped to 100
 				assert.Equal(t, 100, limit)
 				return []models.Product{}, 0, nil
@@ -103,7 +104,7 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 
 	t.Run("catalog retrieval with minimum limit validation", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getAllProductsFunc: func(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
+			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 				// Limit should be clamped to 1
 				assert.Equal(t, 1, limit)
 				return []models.Product{}, 0, nil
@@ -121,7 +122,7 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 
 	t.Run("catalog retrieval with category filter", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getAllProductsFunc: func(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
+			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 				assert.Equal(t, "shoes", categoryCode)
 				return []models.Product{
 					{
@@ -149,7 +150,7 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 
 	t.Run("catalog retrieval with price filter", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getAllProductsFunc: func(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
+			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 				assert.NotNil(t, priceLessThan)
 				assert.Equal(t, "15.00", priceLessThan.String())
 				return []models.Product{
@@ -176,7 +177,7 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 
 	t.Run("catalog retrieval with all filters combined", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getAllProductsFunc: func(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
+			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 				assert.Equal(t, 2, offset)
 				assert.Equal(t, 5, limit)
 				assert.Equal(t, "clothing", categoryCode)
@@ -196,7 +197,7 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 
 	t.Run("repository error handling", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getAllProductsFunc: func(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
+			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
 				return nil, 0, errors.New("database error")
 			},
 		}
@@ -215,7 +216,7 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 func TestCatalogHandler_HandleGetByCode(t *testing.T) {
 	t.Run("successful product retrieval", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getProductByCodeFunc: func(code string) (*models.Product, error) {
+			getProductByCodeFunc: func(ctx context.Context, code string) (*models.Product, error) {
 				assert.Equal(t, "PROD001", code)
 				return &models.Product{
 					Code:  "PROD001",
@@ -259,7 +260,7 @@ func TestCatalogHandler_HandleGetByCode(t *testing.T) {
 
 	t.Run("product not found", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getProductByCodeFunc: func(code string) (*models.Product, error) {
+			getProductByCodeFunc: func(ctx context.Context, code string) (*models.Product, error) {
 				return nil, errors.New("record not found")
 			},
 		}
@@ -291,7 +292,7 @@ func TestCatalogHandler_HandleGetByCode(t *testing.T) {
 
 	t.Run("product with no variants", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
-			getProductByCodeFunc: func(code string) (*models.Product, error) {
+			getProductByCodeFunc: func(ctx context.Context, code string) (*models.Product, error) {
 				return &models.Product{
 					Code:  "PROD006",
 					Price: decimal.NewFromFloat(5.50),

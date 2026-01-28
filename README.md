@@ -19,30 +19,29 @@ This repository contains a Go application for managing products, categories, and
 4. **models/**: Contains the data models and repositories used in the application.
 5. `.env`: Environment variables file for configuration (see `env.example` for reference).
 
-## API Endpoints
+## API Documentation
 
-### Catalog Endpoints
+**Swagger/OpenAPI Specification**: [swagger.yaml](swagger.yaml)
 
-- **GET /catalog** - List all products with pagination and filtering
-  - Query Parameters:
-    - `offset` (optional): Pagination offset (default: 0)
-    - `limit` (optional): Number of items per page (default: 10, min: 1, max: 100)
-    - `category` (optional): Filter by category code (e.g., "clothing", "shoes", "accessories")
-    - `priceLessThan` (optional): Filter products with price less than specified value
-  - Response: `{ "products": [...], "total": <count> }`
+**Interactive API Explorer**: Open `docs/swagger-ui.html` in your browser for full interactive API documentation.
 
-- **GET /catalog/{code}** - Get product details by code
-  - Returns product with all variants (variants inherit product price if not specified)
-  - Response includes category information
-
-### Categories Endpoints
-
+- **GET /catalog** - List products with pagination and filtering
+  - Query params: `offset`, `limit`, `category`, `priceLessThan`
+- **GET /catalog/{code}** - Get product details with variants
 - **GET /categories** - List all categories
-  - Response: `{ "categories": [...] }`
-
 - **POST /categories** - Create a new category
-  - Request Body: `{ "code": "category-code", "name": "Category Name" }`
-  - Response: The created category
+
+## Architecture & Quality
+
+This project follows Go best practices and clean architecture principles:
+
+- ✅ **Repository Pattern**: Interfaces defined where consumed, not where implemented
+- ✅ **Context Propagation**: All repository methods use `context.Context` for cancellation and timeouts
+- ✅ **Structured Logging**: JSON-formatted structured logs using Go's `slog` package
+- ✅ **Error Handling**: Centralized middleware for recovery and error management
+- ✅ **Export Comments**: All exported types and functions have documentation comments
+- ✅ **Unit Tests**: Comprehensive test coverage with mock repositories
+- ✅ **CI/CD**: GitHub Actions workflow for automated testing and linting
 
 ## Setup Code Repository
 
@@ -79,4 +78,17 @@ The application includes comprehensive unit tests for:
 
 Run tests with: `make test`
 
-Follow up for the assignemnt here: [ASSIGNMENT.md](ASSIGNMENT.md)
+### Continuous Integration
+
+The project uses GitHub Actions for automated testing on every push and pull request:
+- Runs all tests with race detection
+- Performs linting with golangci-lint
+- Builds both server and seed commands
+- Runs against PostgreSQL in CI environment
+
+## Code Quality
+
+This implementation follows:
+- [Effective Go](https://go.dev/doc/effective_go) guidelines
+- [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments) conventions
+- Clean Architecture principles for maintainability and scalability

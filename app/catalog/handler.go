@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -10,8 +11,8 @@ import (
 )
 
 type ProductsRepository interface {
-	GetAllProducts(offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error)
-	GetProductByCode(code string) (*models.Product, error)
+	GetAllProducts(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error)
+	GetProductByCode(ctx context.Context, code string) (*models.Product, error)
 }
 
 type Response struct {
@@ -78,7 +79,7 @@ func (h *CatalogHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res, total, err := h.repo.GetAllProducts(offset, limit, categoryCode, priceLessThan)
+	res, total, err := h.repo.GetAllProducts(r.Context(), offset, limit, categoryCode, priceLessThan)
 	if err != nil {
 		api.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -108,7 +109,7 @@ func (h *CatalogHandler) HandleGetByCode(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	product, err := h.repo.GetProductByCode(code)
+	product, err := h.repo.GetProductByCode(r.Context(), code)
 	if err != nil {
 		api.ErrorResponse(w, http.StatusNotFound, "Product not found")
 		return
