@@ -1,4 +1,4 @@
-# Go Hiring Challenge
+# Technical Test - Mytheresa
 
 This repository contains a Go application for managing products, categories, and their prices, including functionalities for CRUD operations and seeding the database with initial data.
 

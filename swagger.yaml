@@ -1,13 +1,13 @@
 openapi: 3.0.3
 info:
-  title: Go Hiring Challenge API
+  title: Technical Test - Mytheresa
   description: |
     Product catalog and category management API.
     
     This API provides endpoints for managing products and categories in an e-commerce system.
   version: 1.0.0
   contact:
-    name: API Support
+    name: Mytheresa
 
 servers:
   - url: http://localhost:8080
