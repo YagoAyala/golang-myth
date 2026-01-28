@@ -19,12 +19,10 @@ import (
 )
 
 func main() {
-	// Load environment variables from .env file
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
 
-	// Initialize structured logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
@@ -32,11 +30,9 @@ func main() {
 
 	logger.Info("starting application")
 
-	// signal handling for graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	// Initialize database connection
 	db, close := database.New(
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
@@ -49,31 +45,25 @@ func main() {
 		}
 	}()
 
-	// Initialize repositories
 	prodRepo := models.NewProductsRepository(db)
 	catRepo := models.NewCategoriesRepository(db)
 
-	// Initialize handlers
 	catalogHandler := catalog.NewCatalogHandler(prodRepo)
 	categoriesHandler := categories.NewCategoriesHandler(catRepo)
 
-	// Set up routing
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /catalog", catalogHandler.HandleGet)
 	mux.HandleFunc("GET /catalog/{code}", catalogHandler.HandleGetByCode)
 	mux.HandleFunc("GET /categories", categoriesHandler.HandleGet)
 	mux.HandleFunc("POST /categories", categoriesHandler.HandlePost)
 
-	// Apply middleware
 	handler := middleware.Recovery(logger)(middleware.Logger(logger)(mux))
 
-	// Set up the HTTP server
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("localhost:%s", os.Getenv("HTTP_PORT")),
 		Handler: handler,
 	}
 
-	// Start the server
 	go func() {
 		logger.Info("server starting", slog.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

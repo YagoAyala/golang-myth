@@ -13,12 +13,10 @@ import (
 )
 
 func main() {
-	// Load environment variables from .env file
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
 
-	// Initialize database connection
 	db, close := database.New(
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
@@ -37,7 +35,6 @@ func main() {
 		log.Fatalf("reading directory failed: %v", err)
 	}
 
-	// Filter and sort .sql files
 	var sqlFiles []os.DirEntry
 	for _, file := range files {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".sql") {

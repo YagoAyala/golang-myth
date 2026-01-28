@@ -87,7 +87,6 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 	t.Run("catalog retrieval with limit validation", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
 			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
-				// Limit should be clamped to 100
 				assert.Equal(t, 100, limit)
 				return []models.Product{}, 0, nil
 			},
@@ -105,7 +104,6 @@ func TestCatalogHandler_HandleGet(t *testing.T) {
 	t.Run("catalog retrieval with minimum limit validation", func(t *testing.T) {
 		mockRepo := &mockProductsRepository{
 			getAllProductsFunc: func(ctx context.Context, offset, limit int, categoryCode string, priceLessThan *decimal.Decimal) ([]models.Product, int64, error) {
-				// Limit should be clamped to 1
 				assert.Equal(t, 1, limit)
 				return []models.Product{}, 0, nil
 			},
@@ -235,7 +233,7 @@ func TestCatalogHandler_HandleGetByCode(t *testing.T) {
 						{
 							Name:  "Variant B",
 							SKU:   "SKU001B",
-							Price: decimal.NewFromFloat(0), // Should inherit product price
+							Price: decimal.NewFromFloat(0),
 						},
 					},
 				}, nil
@@ -255,7 +253,6 @@ func TestCatalogHandler_HandleGetByCode(t *testing.T) {
 		assert.Contains(t, recorder.Body.String(), "Variant A")
 		assert.Contains(t, recorder.Body.String(), "SKU001A")
 		assert.Contains(t, recorder.Body.String(), "11.99")
-		// Variant B should have inherited the product price (10.99)
 		assert.Contains(t, recorder.Body.String(), "10.99")
 	})
 
